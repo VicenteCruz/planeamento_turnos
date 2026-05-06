@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="pt">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Planeamento de Turnos — PRMS Core</title>
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💩</text></svg>">
+    <meta name="description" content="Aplicação de planeamento e distribuição de turnos para equipas">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Ambient background -->
+        <div class="ambient-bg">
+            <div class="orb orb-1"></div>
+            <div class="orb orb-2"></div>
+            <div class="orb orb-3"></div>
+        </div>
+
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-content">
+                <div class="logo-section">
+                    <div class="logo-icon"
+                        style="font-size: 24px; background: transparent; border: none; box-shadow: none; display: flex; align-items: center; justify-content: center;">
+                        💩
+                    </div>
+                    <div>
+                        <h1>Planeamento de Turnos</h1>
+                        <p class="subtitle">PRMS Core — Gestão Inteligente de Equipas</p>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <button id="btnThemeToggle" class="btn-icon" title="Alternar tema">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Step Navigation -->
+            <nav class="step-nav">
+                <button class="step-btn active" data-step="setup" id="stepSetup">
+                    <span class="step-number">1</span>
+                    <span class="step-label">Configuração</span>
+                </button>
+                <div class="step-connector"></div>
+                <button class="step-btn" data-step="import" id="stepImport">
+                    <span class="step-number">2</span>
+                    <span class="step-label">Importar</span>
+                </button>
+                <div class="step-connector"></div>
+                <button class="step-btn" data-step="calendar" id="stepCalendar">
+                    <span class="step-number">3</span>
+                    <span class="step-label">Calendário</span>
+                </button>
+                <div class="step-connector"></div>
+                <button class="step-btn" data-step="stats" id="stepStats">
+                    <span class="step-number">4</span>
+                    <span class="step-label">Estatísticas</span>
+                </button>
+                <div class="step-connector"></div>
+                <button class="step-btn" data-step="export" id="stepExport">
+                    <span class="step-number">5</span>
+                    <span class="step-label">Exportar</span>
+                </button>
+            </nav>
+
+            <!-- Panels -->
+            <div class="panels-container">
+
+                <!-- STEP 1: Setup -->
+                <section class="panel active" id="panelSetup">
+                    <div class="panel-body">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="numEmployees">Número de Funcionários</label>
+                                <input type="number" id="numEmployees" min="1" max="20" value="4" class="input-field">
+                            </div>
+                            <div class="form-group">
+                                <label>Pessoas por Turno (8h/12h)</label>
+                                <input type="number" id="personsPerShift" min="1" max="10" value="2"
+                                    class="input-field">
+                            </div>
+                        </div>
+
+                        <div class="form-group" id="employeeNamesGroup">
+                            <label>Nomes dos Funcionários</label>
+                            <div id="employeeNamesList" class="employee-names-list">
+                                <!-- dynamically populated -->
+                            </div>
+                        </div>
+
+
+                        <button class="btn btn-primary" id="btnApplySetup">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg>
+                            Aplicar Configuração
+                        </button>
+                    </div>
+                </section>
+
+                <!-- STEP 2: Import -->
+                <section class="panel" id="panelImport">
+                    <div class="panel-body">
+                        <div class="drop-zone" id="dropZone">
+                            <div class="drop-zone-content">
+                                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="17 8 12 3 7 8"></polyline>
+                                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                                </svg>
+                                <p class="drop-title">Arrasta o ficheiro Excel aqui</p>
+                                <p class="drop-subtitle">ou clica para selecionar</p>
+                                <input type="file" id="fileInput" accept=".xlsx,.xls" hidden>
+                            </div>
+                        </div>
+                        <div id="importStatus" class="import-status hidden"></div>
+
+                        <div class="import-divider">
+                            <span>ou</span>
+                        </div>
+
+                        <button class="btn btn-secondary" id="btnStartFresh">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                            Começar do Zero
+                        </button>
+                    </div>
+                </section>
+
+                <!-- STEP 3: Calendar -->
+                <section class="panel" id="panelCalendar">
+                    <div class="panel-body">
+                        <div class="calendar-toolbar">
+                            <button class="btn btn-sm btn-accent" id="btnAddDates">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                </svg>
+                                Adicionar Datas
+                            </button>
+                            <button class="btn btn-sm btn-accent" id="btnAutoFill">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path
+                                        d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z">
+                                    </path>
+                                </svg>
+                                Auto-Preencher Vazios
+                            </button>
+                        </div>
+                        <div class="calendar-scroll" id="calendarScroll">
+                            <table class="calendar-table" id="calendarTable">
+                                <!-- dynamically populated -->
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Add Dates Modal -->
+                    <div class="modal-overlay hidden" id="addDatesModal">
+                        <div class="modal-card">
+                            <h3>📅 Adicionar Novas Datas</h3>
+                            <p style="color:var(--text-secondary);font-size:0.85rem;margin-bottom:16px;">Seleciona o
+                                intervalo de datas para adicionar ao planeamento.</p>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="dateRangeStart">Data Início</label>
+                                    <input type="date" id="dateRangeStart" class="input-field">
+                                </div>
+                                <div class="form-group">
+                                    <label for="dateRangeEnd">Data Fim</label>
+                                    <input type="date" id="dateRangeEnd" class="input-field">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Dias da Semana a Incluir</label>
+                                <div class="weekday-selector">
+                                    <label class="weekday-chip"><input type="checkbox" value="1"
+                                            checked><span>Seg</span></label>
+                                    <label class="weekday-chip"><input type="checkbox" value="2"
+                                            checked><span>Ter</span></label>
+                                    <label class="weekday-chip"><input type="checkbox" value="3"
+                                            checked><span>Qua</span></label>
+                                    <label class="weekday-chip"><input type="checkbox" value="4"
+                                            checked><span>Qui</span></label>
+                                    <label class="weekday-chip"><input type="checkbox" value="5"
+                                            checked><span>Sex</span></label>
+                                    <label class="weekday-chip"><input type="checkbox"
+                                            value="6"><span>Sáb</span></label>
+                                    <label class="weekday-chip"><input type="checkbox"
+                                            value="0"><span>Dom</span></label>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="checkbox-inline">
+                                    <input type="checkbox" id="newDatesNight">
+                                    Incluir turno noturno (16h-01h) nestas datas
+                                </label>
+                            </div>
+                            <div id="datePreviewCount"
+                                style="color:var(--accent-hover);font-size:0.85rem;font-weight:600;margin-bottom:12px;">
+                            </div>
+                            <div class="modal-actions">
+                                <button class="btn btn-secondary" id="btnCancelDates">Cancelar</button>
+                                <button class="btn btn-primary" id="btnConfirmDates">Adicionar</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Cell Edit Modal -->
+                    <div class="modal-overlay hidden" id="cellEditModal">
+                        <div class="modal-card modal-sm">
+                            <h3 id="cellEditTitle">Editar Turno</h3>
+                            <div class="form-group" id="cellEditToggleGroup" style="display:none;">
+                                <label class="checkbox-inline"
+                                    style="background: #f0f0f5; padding: 14px 20px; border-radius: var(--radius-md); width: 100%; border: 1px solid var(--glass-border);">
+                                    <input type="checkbox" id="cellEditActiveToggle">
+                                    <span style="font-weight:600;">Turno Ativo neste dia</span>
+                                </label>
+                            </div>
+                            <div class="form-group" id="cellEditPeopleGroup">
+                                <label for="cellEditSelect">Funcionários</label>
+                                <div id="cellEditCheckboxes" class="cell-edit-checkboxes">
+                                    <!-- dynamically populated -->
+                                </div>
+                            </div>
+                            <div class="modal-actions">
+                                <button class="btn btn-secondary" id="btnCancelEdit">Cancelar</button>
+                                <button class="btn btn-primary" id="btnConfirmEdit">Guardar</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Single Day Auto-Fill Modal -->
+                    <div class="modal-overlay hidden" id="singleDayAutoFillModal">
+                        <div class="modal-card">
+                            <h3 id="singleDayAutoFillTitle">✨ Auto-Preencher Dia</h3>
+
+                            <div class="form-group">
+                                <label>Funcionários Disponíveis</label>
+                                <div id="singleDayAutoFillEmployees" class="weekday-selector">
+                                    <!-- Populated dynamically -->
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Pessoas por Turno</label>
+                                <div class="range-inputs" style="gap: 16px;">
+                                    <div style="flex:1"><small
+                                            style="display:block;color:var(--text-secondary);margin-bottom:4px;">Manhã</small><input
+                                            type="number" id="singleDayAutoFill_morn" class="input-field input-sm"
+                                            min="0" value="2" style="width:100%;max-width:none;"></div>
+                                    <div style="flex:1"><small
+                                            style="display:block;color:var(--text-secondary);margin-bottom:4px;">Tarde</small><input
+                                            type="number" id="singleDayAutoFill_aft" class="input-field input-sm"
+                                            min="0" value="2" style="width:100%;max-width:none;"></div>
+                                    <div style="flex:1" id="singleDayAutoFill_nightGroup"><small
+                                            style="display:block;color:var(--text-secondary);margin-bottom:4px;">Noite</small><input
+                                            type="number" id="singleDayAutoFill_night" class="input-field input-sm"
+                                            min="0" value="1" style="width:100%;max-width:none;"></div>
+                                </div>
+                            </div>
+
+                            <div class="modal-actions">
+                                <button class="btn btn-secondary" id="btnCancelSingleDayAutoFill">Cancelar</button>
+                                <button class="btn btn-primary" id="btnConfirmSingleDayAutoFill">Auto-Preencher</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Auto-Fill Configuration Modal -->
+                    <div class="modal-overlay hidden" id="autoFillModal">
+                        <div class="modal-card">
+                            <h3>✨ Configuração de Auto-Preenchimento</h3>
+
+                            <div class="form-group">
+                                <label>Funcionários Disponíveis</label>
+                                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 8px;">
+                                    Desmarca pessoas que estão de férias ou ausentes.</p>
+                                <div id="autoFillEmployees" class="weekday-selector">
+                                    <!-- Populated dynamically -->
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Pessoas por Turno (Dias com 2 turnos)</label>
+                                <div class="range-inputs" style="gap: 16px;">
+                                    <div style="flex:1"><small
+                                            style="display:block;color:var(--text-secondary);margin-bottom:4px;">Manhã</small><input
+                                            type="number" id="autoFill2_morn" class="input-field input-sm" min="0"
+                                            value="2" style="width:100%;max-width:none;"></div>
+                                    <div style="flex:1"><small
+                                            style="display:block;color:var(--text-secondary);margin-bottom:4px;">Tarde</small><input
+                                            type="number" id="autoFill2_aft" class="input-field input-sm" min="0"
+                                            value="2" style="width:100%;max-width:none;"></div>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Pessoas por Turno (Dias com 3 turnos)</label>
+                                <div class="range-inputs" style="gap: 16px;">
+                                    <div style="flex:1"><small
+                                            style="display:block;color:var(--text-secondary);margin-bottom:4px;">Manhã</small><input
+                                            type="number" id="autoFill3_morn" class="input-field input-sm" min="0"
+                                            value="2" style="width:100%;max-width:none;"></div>
+                                    <div style="flex:1"><small
+                                            style="display:block;color:var(--text-secondary);margin-bottom:4px;">Tarde</small><input
+                                            type="number" id="autoFill3_aft" class="input-field input-sm" min="0"
+                                            value="2" style="width:100%;max-width:none;"></div>
+                                    <div style="flex:1"><small
+                                            style="display:block;color:var(--text-secondary);margin-bottom:4px;">Noite</small><input
+                                            type="number" id="autoFill3_night" class="input-field input-sm" min="0"
+                                            value="1" style="width:100%;max-width:none;"></div>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Dias a Preencher</label>
+                                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 8px;">Clica
+                                    nos dias do calendário para os ativar (verde) ou desativar (cinzento).</p>
+                                <div id="autoFillDates" class="mini-calendar-container"
+                                    style="max-height: 250px; overflow-y: auto; padding: 12px; border: 1px solid var(--glass-border); border-radius: var(--radius-md); background: #f9f9fb;">
+                                    <!-- Populated dynamically -->
+                                </div>
+                            </div>
+
+                            <div class="modal-actions">
+                                <button class="btn btn-secondary" id="btnCancelAutoFill">Cancelar</button>
+                                <button class="btn btn-primary" id="btnConfirmAutoFill">Auto-Preencher</button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- STEP 4: Stats -->
+                <section class="panel" id="panelStats">
+                    <div class="panel-body">
+                        <div class="stats-grid" id="statsGrid">
+                            <!-- dynamically populated -->
+                        </div>
+                        <div class="pairs-section">
+                            <h3>🤝 Diversidade de Pares</h3>
+                            <p class="pairs-description">Número de vezes que cada par trabalhou junto.</p>
+                            <div id="pairsMatrix" class="pairs-matrix-container">
+                                <!-- dynamically populated -->
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- STEP 5: Export -->
+                <section class="panel" id="panelExport">
+                    <div class="panel-body">
+                        <div class="export-preview" id="exportPreview">
+                            <!-- summary before export -->
+                        </div>
+                        <div class="export-actions">
+                            <button class="btn btn-primary btn-lg" id="btnExport">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="7 10 12 15 17 10"></polyline>
+                                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                                </svg>
+                                Exportar Excel
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+        </main>
+
+        <!-- Toast container -->
+        <div id="toastContainer" class="toast-container"></div>
+    </div>
+
+    <script src="app-state.js"></script>
+    <script src="app-logic.js"></script>
+    <script src="app-io.js"></script>
+    <script src="app-ui.js"></script>
+    <script src="app.js"></script>
+</body>
+
+</html>
