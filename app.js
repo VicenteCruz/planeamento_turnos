@@ -3,6 +3,13 @@
    ============================================ */
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Resolver bug de rendering no mobile: 
+    // Modais dentro de elementos com "transform" ou "backdrop-filter" ficam limitados a esse elemento.
+    // Movendo para o body, eles garantem que ocupam 100% do ecrã!
+    document.querySelectorAll('.modal-overlay').forEach(modal => {
+        document.body.appendChild(modal);
+    });
+
     // Step navigation
     const stepBtns = document.querySelectorAll('.step-btn');
     const panels = document.querySelectorAll('.panel');
@@ -165,8 +172,169 @@ document.addEventListener('DOMContentLoaded', () => {
         renderCalendar();
     });
 
-    // Auto-fill Modal Trigger
+    // Wizard Logic
+    let currentWizardStep = 1;
+
+    function updateWizardUI() {
+        document.getElementById('wizardStep1').style.display = currentWizardStep === 1 ? 'block' : 'none';
+        document.getElementById('wizardStep2').style.display = currentWizardStep === 2 ? 'block' : 'none';
+        document.getElementById('wizardStep3').style.display = currentWizardStep === 3 ? 'block' : 'none';
+        document.getElementById('wizardStep4').style.display = currentWizardStep === 4 ? 'block' : 'none';
+
+        document.getElementById('autoFillWizardTitle').textContent = `✨ Auto-Preencher (Passo ${currentWizardStep} de 4)`;
+
+        document.getElementById('btnWizardBack').style.display = currentWizardStep > 1 ? 'block' : 'none';
+        
+        if (currentWizardStep < 4) {
+            document.getElementById('btnWizardNext').style.display = 'block';
+            document.getElementById('btnConfirmAutoFill').style.display = 'none';
+        } else {
+            document.getElementById('btnWizardNext').style.display = 'none';
+            document.getElementById('btnConfirmAutoFill').style.display = 'block';
+        }
+
+        // Logic for Step 3: show/hide configs
+        if (currentWizardStep === 3) {
+            const dateCheckboxes = document.querySelectorAll('#autoFillDates input:checked');
+            let has2Shifts = false;
+            let has3Shifts = false;
+            
+            dateCheckboxes.forEach(cb => {
+                if (AppState.nightDates.has(cb.value)) {
+                    has3Shifts = true;
+                } else {
+                    has2Shifts = true;
+                }
+            });
+
+            document.getElementById('config2ShiftsGroup').style.display = has2Shifts ? 'block' : 'none';
+            document.getElementById('config3ShiftsGroup').style.display = has3Shifts ? 'block' : 'none';
+        }
+
+        // Logic for Step 4: Summary / Simulation
+        if (currentWizardStep === 4) {
+            const dateCheckboxes = document.querySelectorAll('#autoFillDates input:checked');
+            const empCheckboxes = document.querySelectorAll('#autoFillEmployees input:checked');
+            
+            const dates = Array.from(dateCheckboxes).map(cb => cb.value);
+            const availableEmployees = Array.from(empCheckboxes).map(cb => cb.value);
+            
+            const allowedDates = new Set(dates);
+            
+            const config2 = {
+                morn: parseInt(document.getElementById('autoFill2_morn').value) || 0,
+                aft: parseInt(document.getElementById('autoFill2_aft').value) || 0
+            };
+            const config3 = {
+                morn: parseInt(document.getElementById('autoFill3_morn').value) || 0,
+                aft: parseInt(document.getElementById('autoFill3_aft').value) || 0,
+                night: parseInt(document.getElementById('autoFill3_night').value) || 0
+            };
+
+            // 1. Run Simulation
+            const originalCalendar = JSON.parse(JSON.stringify(AppState.calendar));
+            
+            // Clear the selected dates in the current calendar to simulate fresh fill
+            dates.forEach(dk => {
+                if (!AppState.calendar[dk]) AppState.calendar[dk] = {};
+                AppState.calendar[dk]['8h-17h'] = [];
+                AppState.calendar[dk]['12h-21h'] = [];
+                if (AppState.nightDates.has(dk)) {
+                    AppState.calendar[dk]['16h-01h'] = [];
+                }
+            });
+
+            autoFillEmptyShifts(availableEmployees, config2, config3, allowedDates);
+            
+            // 2. Extract results
+            const simCalendar = AppState.calendar;
+            
+            // Compute sim stats just for the available employees on the allowed dates
+            const simStats = {};
+            availableEmployees.forEach(emp => { simStats[emp] = { morn: 0, aft: 0, night: 0, total: 0 }; });
+            
+            dates.forEach(dk => {
+                const cal = simCalendar[dk];
+                if(cal['8h-17h']) cal['8h-17h'].forEach(e => { if(simStats[e]) { simStats[e].morn++; simStats[e].total++; } });
+                if(cal['12h-21h']) cal['12h-21h'].forEach(e => { if(simStats[e]) { simStats[e].aft++; simStats[e].total++; } });
+                if(cal['16h-01h']) cal['16h-01h'].forEach(e => { if(simStats[e]) { simStats[e].night++; simStats[e].total++; } });
+            });
+
+            // 3. Render 'simDates'
+            let datesHtml = '';
+            dates.forEach(dk => {
+                const cal = simCalendar[dk];
+                const parts = dk.split('-');
+                const d = new Date(+parts[0], +parts[1] - 1, +parts[2]);
+                const title = `<strong>${d.getDate()}</strong> ${d.toLocaleString('pt-PT', { month: 'short' }).replace('.', '')}`;
+                
+                datesHtml += `
+                    <div style="background:var(--bg-primary); margin-bottom:6px; border-radius:6px; border:1px solid var(--glass-border); overflow:hidden; display:flex; flex-direction:column;">
+                        <div style="padding:6px 10px; background:var(--bg-base); font-weight:600; font-size:0.8rem; color:var(--text-primary); border-bottom:1px solid var(--glass-border);">📅 ${title}</div>
+                        <div style="padding:6px 10px; font-size:0.75rem; line-height:1.3; display:flex; flex-wrap:wrap; gap:12px;">
+                            <div style="white-space: nowrap;">☀️ <strong>${cal['8h-17h'].join(', ') || '-'}</strong></div>
+                            <div style="white-space: nowrap;">🌤️ <strong>${cal['12h-21h'].join(', ') || '-'}</strong></div>
+                            ${AppState.nightDates.has(dk) ? `<div style="white-space: nowrap;">🌙 <strong>${cal['16h-01h'] ? cal['16h-01h'].join(', ') : '-'}</strong></div>` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+            document.getElementById('simDates').innerHTML = datesHtml || '<div style="padding:12px; text-align:center; color:var(--text-secondary); font-size:0.85rem;">Nenhuma data selecionada.</div>';
+
+            // 4. Render 'simPeople'
+            let peopleHtml = '';
+            availableEmployees.forEach(emp => {
+                const s = simStats[emp];
+                peopleHtml += `
+                    <div style="background:var(--bg-primary); margin-bottom:8px; border-radius:6px; border:1px solid var(--glass-border); overflow:hidden; display:flex; align-items:center;">
+                        <div style="padding:10px 12px; background:var(--bg-base); font-weight:600; font-size:0.85rem; color:var(--text-primary); width:100px; flex-shrink:0; border-right:1px solid var(--glass-border);">👤 ${emp}</div>
+                        <div style="padding:8px 12px; font-size:0.85rem; flex:1; display:flex; justify-content:space-around;">
+                            <span title="Manhã" style="color:var(--text-secondary);">☀️ <strong>${s.morn}</strong></span>
+                            <span title="Tarde" style="color:var(--text-secondary);">🌤️ <strong>${s.aft}</strong></span>
+                            <span title="Noite" style="color:var(--text-secondary);">🌙 <strong>${s.night}</strong></span>
+                            <span title="Total" style="color:var(--primary-color);">Σ <strong>${s.total}</strong></span>
+                        </div>
+                    </div>
+                `;
+            });
+            document.getElementById('simPeople').innerHTML = peopleHtml || '<div style="padding:12px; text-align:center; color:var(--text-secondary); font-size:0.85rem;">Nenhum funcionário selecionado.</div>';
+
+            // 5. Render 'simConfig'
+            let configHtml = '';
+            let days2 = dates.filter(dk => !AppState.nightDates.has(dk));
+            let days3 = dates.filter(dk => AppState.nightDates.has(dk));
+
+            if (days2.length > 0) {
+                configHtml += `
+                    <div style="background:var(--bg-primary); margin-bottom:8px; border-radius:6px; border:1px solid var(--glass-border); padding:12px;">
+                        <div style="font-weight:600; margin-bottom:8px; font-size:0.85rem;">☀️ Dias Normais (2 turnos) — <span style="color:var(--primary-color);">${days2.length} dia(s)</span></div>
+                        <div style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:8px;">Manhã: <strong>${config2.morn}</strong> • Tarde: <strong>${config2.aft}</strong></div>
+                        <div style="font-size:0.8rem; color:var(--text-tertiary); line-height:1.4;">Dias: ${days2.join(', ')}</div>
+                    </div>
+                `;
+            }
+            if (days3.length > 0) {
+                configHtml += `
+                    <div style="background:var(--bg-primary); margin-bottom:8px; border-radius:6px; border:1px solid var(--glass-border); padding:12px;">
+                        <div style="font-weight:600; margin-bottom:8px; font-size:0.85rem;">🌙 Dias com Noite (3 turnos) — <span style="color:var(--primary-color);">${days3.length} dia(s)</span></div>
+                        <div style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:8px;">Manhã: <strong>${config3.morn}</strong> • Tarde: <strong>${config3.aft}</strong> • Noite: <strong>${config3.night}</strong></div>
+                        <div style="font-size:0.8rem; color:var(--text-tertiary); line-height:1.4;">Dias: ${days3.join(', ')}</div>
+                    </div>
+                `;
+            }
+            document.getElementById('simConfig').innerHTML = configHtml || '<div style="padding:12px; text-align:center; color:var(--text-secondary); font-size:0.85rem;">Sem configurações ativas.</div>';
+
+            // Restore original calendar state so we don't mess up until "Concluir" is clicked
+            AppState.calendar = originalCalendar;
+        }
+    }
+
+    // Auto-Fill Modal Trigger
     document.getElementById('btnAutoFill').addEventListener('click', () => {
+        currentWizardStep = 1;
+        updateWizardUI();
+
+
         // Populate employees
         const empContainer = document.getElementById('autoFillEmployees');
         empContainer.innerHTML = '';
@@ -195,11 +363,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const datesByMonth = {};
         AppState.dates.forEach(dk => {
-            const parts = dk.split('-');
-            const d = new Date(+parts[0], +parts[1] - 1, +parts[2]);
-            const monthKey = d.toLocaleString('pt-PT', { month: 'long', year: 'numeric' });
-            if (!datesByMonth[monthKey]) datesByMonth[monthKey] = [];
-            datesByMonth[monthKey].push({ dk, d });
+            const cal = AppState.calendar[dk] || {};
+            const hasNight = AppState.nightDates.has(dk);
+            
+            const morningFilled = cal['8h-17h'] && cal['8h-17h'].length > 0;
+            const afternoonFilled = cal['12h-21h'] && cal['12h-21h'].length > 0;
+            const nightFilled = hasNight ? (cal['16h-01h'] && cal['16h-01h'].length > 0) : true;
+            
+            const isFullyFilled = morningFilled && afternoonFilled && nightFilled;
+
+            if (!isFullyFilled) {
+                const parts = dk.split('-');
+                const d = new Date(+parts[0], +parts[1] - 1, +parts[2]);
+                const monthKey = d.toLocaleString('pt-PT', { month: 'long', year: 'numeric' });
+                if (!datesByMonth[monthKey]) datesByMonth[monthKey] = [];
+                datesByMonth[monthKey].push({ dk, d });
+            }
         });
 
         for (const [month, days] of Object.entries(datesByMonth)) {
@@ -211,9 +390,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             days.forEach(({ dk, d }) => {
                 const label = document.createElement('label');
-                label.className = 'mini-calendar-day active';
+                label.className = 'mini-calendar-day inactive';
                 label.innerHTML = `
-                    <input type="checkbox" value="${dk}" checked>
+                    <input type="checkbox" value="${dk}">
                     <span class="day-num">${d.getDate()}</span>
                     <span class="day-name">${d.toLocaleString('pt-PT', { weekday: 'short' }).replace('.', '')}</span>
                 `;
@@ -227,11 +406,81 @@ document.addEventListener('DOMContentLoaded', () => {
             datesContainer.appendChild(monthDiv);
         }
 
+        // Setup sim-tabs listeners
+        document.querySelectorAll('.sim-tab').forEach(tab => {
+            // Remove previous listeners if any (simple approach)
+            const newTab = tab.cloneNode(true);
+            tab.parentNode.replaceChild(newTab, tab);
+            
+            newTab.addEventListener('click', function() {
+                document.querySelectorAll('.sim-tab').forEach(t => {
+                    t.classList.remove('active');
+                    t.style.background = 'transparent';
+                    t.style.color = 'var(--text-secondary)';
+                });
+                document.querySelectorAll('.sim-content').forEach(c => c.style.display = 'none');
+                
+                this.classList.add('active');
+                this.style.background = 'var(--text-primary)';
+                this.style.color = 'var(--bg-primary)';
+                
+                const targetId = this.getAttribute('data-target');
+                document.getElementById(targetId).style.display = 'block';
+            });
+        });
+
         document.getElementById('autoFillModal').classList.remove('hidden');
     });
 
     document.getElementById('btnCancelAutoFill').addEventListener('click', () => {
         document.getElementById('autoFillModal').classList.add('hidden');
+    });
+
+    document.getElementById('btnWizardNext').addEventListener('click', () => {
+        if (currentWizardStep === 1) {
+            const dateCheckboxes = document.querySelectorAll('#autoFillDates input:checked');
+            if (dateCheckboxes.length === 0) {
+                toast('Seleciona pelo menos um dia para preencher.', 'warning');
+                return;
+            }
+        }
+        if (currentWizardStep < 4) {
+            currentWizardStep++;
+            updateWizardUI();
+        }
+    });
+
+    document.getElementById('btnWizardBack').addEventListener('click', () => {
+        if (currentWizardStep > 1) {
+            currentWizardStep--;
+            updateWizardUI();
+        }
+    });
+
+    document.getElementById('btnSelectAllDates').addEventListener('click', () => {
+        document.querySelectorAll('#autoFillDates input[type="checkbox"]').forEach(cb => {
+            if (!cb.checked) {
+                cb.checked = true;
+                const label = cb.closest('.mini-calendar-day');
+                if (label) {
+                    label.classList.add('active');
+                    label.classList.remove('inactive');
+                }
+            }
+        });
+    });
+
+    document.getElementById('btnDeselectAllDates').addEventListener('click', () => {
+        document.querySelectorAll('#autoFillDates input[type="checkbox"]').forEach(cb => {
+            if (cb.checked) {
+                cb.checked = false;
+                const label = cb.closest('.mini-calendar-day');
+                if (label) {
+                    label.classList.remove('active');
+                    label.classList.add('inactive');
+                }
+            }
+        });
     });
 
     document.getElementById('btnConfirmAutoFill').addEventListener('click', () => {

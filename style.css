@@ -485,7 +485,7 @@ textarea.input-field {
 }
 
 .checkbox-card:hover .checkbox-visual {
-    background: #f9f9fb;
+    background: var(--bg-base);
 }
 
 .checkbox-card input:checked+.checkbox-visual {
@@ -700,7 +700,7 @@ textarea.input-field {
 }
 
 .calendar-table thead th {
-    background: #f9f9fb;
+    background: var(--bg-base);
     color: var(--text-secondary);
     font-weight: 600;
     font-size: 0.85rem;
@@ -765,21 +765,24 @@ textarea.input-field {
     position: fixed;
     inset: 0;
     z-index: 1000;
-    background: rgba(0, 0, 0, 0.2);
+    background: rgba(0, 0, 0, 0.4);
     backdrop-filter: blur(5px);
-    display: grid;
-    place-items: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
     padding: 20px;
+    overflow-y: auto;
 }
 
 .modal-card {
     background: var(--bg-primary);
     border: 1px solid var(--glass-border);
     border-radius: var(--radius-xl);
-    padding: 40px;
+    padding: 32px;
     width: 100%;
-    max-width: 500px;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    max-width: 650px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+    margin: auto;
 }
 
 .modal-sm {
@@ -793,12 +796,67 @@ textarea.input-field {
     letter-spacing: -0.01em;
     color: var(--text-primary);
 }
-
 .modal-actions {
     display: flex;
     gap: 12px;
     justify-content: flex-end;
-    margin-top: 32px;
+    margin-top: auto;
+}
+
+/* ============================================
+   MOBILE RESPONSIVENESS
+   ============================================ */
+@media (max-width: 768px) {
+    .modal-card {
+        padding: 24px 20px;
+        max-height: 95vh;
+        overflow-y: auto;
+        border-radius: var(--radius-lg);
+        margin: auto;
+    }
+    
+    .panel-body {
+        padding: 24px 16px;
+    }
+
+    .main-content {
+        padding: 20px 12px;
+    }
+
+    .calendar-toolbar {
+        flex-direction: column;
+    }
+    
+    .form-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+    
+    .shifts-config {
+        flex-direction: column;
+    }
+    
+    .employee-names-list {
+        grid-template-columns: 1fr;
+    }
+    
+    .btn {
+        width: 100%;
+        margin-bottom: 8px;
+    }
+    
+    .modal-actions {
+        flex-direction: column-reverse;
+    }
+    
+    .modal-actions > div {
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .mini-calendar-month {
+        max-width: 100%;
+    }
 }
 
 /* Weekday selector */
@@ -821,8 +879,8 @@ textarea.input-field {
     display: block;
     padding: 10px 18px;
     border-radius: 100px;
-    border: 1px solid #d2d2d7;
-    background: #fff;
+    border: 1px solid var(--glass-border);
+    background: var(--bg-primary);
     font-size: 0.95rem;
     font-weight: 500;
     color: var(--text-secondary);
@@ -831,12 +889,12 @@ textarea.input-field {
 
 .weekday-chip input:checked+span {
     border-color: var(--accent);
-    background: #f0fdf4;
-    color: #2b8b54;
+    background: var(--accent-glow);
+    color: var(--text-primary);
 }
 
 .weekday-chip:hover span {
-    background: #f5f5f7;
+    background: var(--bg-base);
 }
 
 input[type="date"].input-field {
@@ -1180,11 +1238,11 @@ input[type="date"].input-field {
 .mini-calendar-day {
     position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center;
     padding: 8px 0; border-radius: var(--radius-sm); border: 1px solid var(--glass-border);
-    background: #fff; cursor: pointer; transition: var(--transition-fast); user-select: none;
+    background: var(--bg-primary); cursor: pointer; transition: var(--transition-fast); user-select: none;
 }
 .mini-calendar-day input { display: none; }
 .mini-calendar-day:hover { border-color: var(--accent-hover); }
-.mini-calendar-day.active { background: #f0fdf4; border-color: var(--accent); color: #1e7145; box-shadow: 0 2px 4px rgba(43,139,84,0.1); }
-.mini-calendar-day.inactive { background: #f5f5f7; border-color: #e5e5ea; color: #a1a1a6; }
+.mini-calendar-day.active { background: var(--accent-glow); border-color: var(--accent); color: var(--accent-hover); box-shadow: 0 2px 4px rgba(43,139,84,0.1); }
+.mini-calendar-day.inactive { background: var(--bg-base); border-color: var(--glass-border); color: var(--text-muted); }
 .mini-calendar-day .day-num { font-size: 1rem; font-weight: 600; line-height: 1; margin-bottom: 2px; }
 .mini-calendar-day .day-name { font-size: 0.65rem; text-transform: uppercase; font-weight: 600; opacity: 0.7; }

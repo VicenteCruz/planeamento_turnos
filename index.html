@@ -291,61 +291,100 @@
                     <!-- Auto-Fill Configuration Modal -->
                     <div class="modal-overlay hidden" id="autoFillModal">
                         <div class="modal-card">
-                            <h3>✨ Configuração de Auto-Preenchimento</h3>
+                            <h3 id="autoFillWizardTitle">✨ Auto-Preencher (Passo 1 de 3)</h3>
 
-                            <div class="form-group">
-                                <label>Funcionários Disponíveis</label>
-                                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 8px;">
-                                    Desmarca pessoas que estão de férias ou ausentes.</p>
-                                <div id="autoFillEmployees" class="weekday-selector">
-                                    <!-- Populated dynamically -->
+                            <!-- STEP 1: Dates -->
+                            <div id="wizardStep1" class="wizard-step active">
+                                <div class="form-group">
+                                    <label>1. Dias a Preencher</label>
+                                    <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                                        <button type="button" class="btn btn-sm btn-secondary" id="btnSelectAllDates">Selecionar Tudo</button>
+                                        <button type="button" class="btn btn-sm btn-secondary" id="btnDeselectAllDates">Desmarcar Tudo</button>
+                                    </div>
+                                    <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 8px;">Clica
+                                        nos dias do calendário para os ativar (verde) ou desativar (cinzento).</p>
+                                    <div id="autoFillDates" class="mini-calendar-container"
+                                        style="max-height: 250px; overflow-y: auto; padding: 12px; border: 1px solid var(--glass-border); border-radius: var(--radius-md); background: var(--bg-base);">
+                                        <!-- Populated dynamically -->
+                                    </div>
                                 </div>
                             </div>
 
-                            <div class="form-group">
-                                <label>Pessoas por Turno (Dias com 2 turnos)</label>
-                                <div class="range-inputs" style="gap: 16px;">
-                                    <div style="flex:1"><small
-                                            style="display:block;color:var(--text-secondary);margin-bottom:4px;">Manhã</small><input
-                                            type="number" id="autoFill2_morn" class="input-field input-sm" min="0"
-                                            value="2" style="width:100%;max-width:none;"></div>
-                                    <div style="flex:1"><small
-                                            style="display:block;color:var(--text-secondary);margin-bottom:4px;">Tarde</small><input
-                                            type="number" id="autoFill2_aft" class="input-field input-sm" min="0"
-                                            value="2" style="width:100%;max-width:none;"></div>
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label>Pessoas por Turno (Dias com 3 turnos)</label>
-                                <div class="range-inputs" style="gap: 16px;">
-                                    <div style="flex:1"><small
-                                            style="display:block;color:var(--text-secondary);margin-bottom:4px;">Manhã</small><input
-                                            type="number" id="autoFill3_morn" class="input-field input-sm" min="0"
-                                            value="2" style="width:100%;max-width:none;"></div>
-                                    <div style="flex:1"><small
-                                            style="display:block;color:var(--text-secondary);margin-bottom:4px;">Tarde</small><input
-                                            type="number" id="autoFill3_aft" class="input-field input-sm" min="0"
-                                            value="2" style="width:100%;max-width:none;"></div>
-                                    <div style="flex:1"><small
-                                            style="display:block;color:var(--text-secondary);margin-bottom:4px;">Noite</small><input
-                                            type="number" id="autoFill3_night" class="input-field input-sm" min="0"
-                                            value="1" style="width:100%;max-width:none;"></div>
+                            <!-- STEP 2: Employees -->
+                            <div id="wizardStep2" class="wizard-step" style="display:none;">
+                                <div class="form-group">
+                                    <label>2. Funcionários Disponíveis</label>
+                                    <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 8px;">
+                                        Desmarca pessoas que estão de férias ou ausentes.</p>
+                                    <div id="autoFillEmployees" class="weekday-selector">
+                                        <!-- Populated dynamically -->
+                                    </div>
                                 </div>
                             </div>
 
-                            <div class="form-group">
-                                <label>Dias a Preencher</label>
-                                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 8px;">Clica
-                                    nos dias do calendário para os ativar (verde) ou desativar (cinzento).</p>
-                                <div id="autoFillDates" class="mini-calendar-container"
-                                    style="max-height: 250px; overflow-y: auto; padding: 12px; border: 1px solid var(--glass-border); border-radius: var(--radius-md); background: #f9f9fb;">
-                                    <!-- Populated dynamically -->
+                            <!-- STEP 3: Config -->
+                            <div id="wizardStep3" class="wizard-step" style="display:none;">
+                                <div class="form-group" id="config2ShiftsGroup">
+                                    <label>3. Pessoas por Turno (Dias com 2 turnos)</label>
+                                    <div class="range-inputs" style="gap: 16px;">
+                                        <div style="flex:1"><small
+                                                style="display:block;color:var(--text-secondary);margin-bottom:4px;">Manhã</small><input
+                                                type="number" id="autoFill2_morn" class="input-field input-sm" min="0"
+                                                value="2" style="width:100%;max-width:none;"></div>
+                                        <div style="flex:1"><small
+                                                style="display:block;color:var(--text-secondary);margin-bottom:4px;">Tarde</small><input
+                                                type="number" id="autoFill2_aft" class="input-field input-sm" min="0"
+                                                value="2" style="width:100%;max-width:none;"></div>
+                                    </div>
+                                </div>
+                                <div class="form-group" id="config3ShiftsGroup">
+                                    <label>3. Pessoas por Turno (Dias com 3 turnos)</label>
+                                    <div class="range-inputs" style="gap: 16px;">
+                                        <div style="flex:1"><small
+                                                style="display:block;color:var(--text-secondary);margin-bottom:4px;">Manhã</small><input
+                                                type="number" id="autoFill3_morn" class="input-field input-sm" min="0"
+                                                value="2" style="width:100%;max-width:none;"></div>
+                                        <div style="flex:1"><small
+                                                style="display:block;color:var(--text-secondary);margin-bottom:4px;">Tarde</small><input
+                                                type="number" id="autoFill3_aft" class="input-field input-sm" min="0"
+                                                value="2" style="width:100%;max-width:none;"></div>
+                                        <div style="flex:1"><small
+                                                style="display:block;color:var(--text-secondary);margin-bottom:4px;">Noite</small><input
+                                                type="number" id="autoFill3_night" class="input-field input-sm" min="0"
+                                                value="1" style="width:100%;max-width:none;"></div>
+                                    </div>
                                 </div>
                             </div>
 
-                            <div class="modal-actions">
-                                <button class="btn btn-secondary" id="btnCancelAutoFill">Cancelar</button>
-                                <button class="btn btn-primary" id="btnConfirmAutoFill">Auto-Preencher</button>
+                            <!-- STEP 4: Summary -->
+                            <div id="wizardStep4" class="wizard-step" style="display:none;">
+                                <div class="form-group">
+                                    <label>4. Simulação de Preenchimento</label>
+                                    <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 8px;">Esta é uma simulação. Clica para explorar os resultados.</p>
+                                    
+                                    <div class="simulation-tabs" style="display: flex; gap: 4px; margin-bottom: 12px; background: var(--bg-card); padding: 4px; border-radius: 8px; border: 1px solid var(--glass-border);">
+                                        <button type="button" class="sim-tab active" data-target="simDates" style="flex: 1; padding: 6px; font-size: 0.85rem; border-radius: 4px; border: none; background: var(--text-primary); color: var(--bg-primary); cursor: pointer; font-weight: 500;">Datas</button>
+                                        <button type="button" class="sim-tab" data-target="simPeople" style="flex: 1; padding: 6px; font-size: 0.85rem; border-radius: 4px; border: none; background: transparent; color: var(--text-secondary); cursor: pointer; font-weight: 500;">Pessoas</button>
+                                        <button type="button" class="sim-tab" data-target="simConfig" style="flex: 1; padding: 6px; font-size: 0.85rem; border-radius: 4px; border: none; background: transparent; color: var(--text-secondary); cursor: pointer; font-weight: 500;">Config</button>
+                                    </div>
+
+                                    <div id="wizardSummary" style="min-height: 200px; max-height: 350px; overflow-y: auto;">
+                                        <div id="simDates" class="sim-content active"></div>
+                                        <div id="simPeople" class="sim-content" style="display:none;"></div>
+                                        <div id="simConfig" class="sim-content" style="display:none;"></div>
+                                    </div>
+
+                                    <p style="margin-top: 12px; font-size: 0.85rem; color: var(--text-secondary);">Se concordares com esta simulação, clica em Concluir para aplicar definitivamente.</p>
+                                </div>
+                            </div>
+
+                            <div class="modal-actions" style="justify-content: space-between;">
+                                <button class="btn btn-secondary" id="btnWizardBack" style="display:none;">Voltar</button>
+                                <div style="display:flex; gap: 8px; margin-left: auto;">
+                                    <button class="btn btn-secondary" id="btnCancelAutoFill">Cancelar</button>
+                                    <button class="btn btn-primary" id="btnWizardNext">Próximo</button>
+                                    <button class="btn btn-primary" id="btnConfirmAutoFill" style="display:none;">Concluir</button>
+                                </div>
                             </div>
                         </div>
                     </div>
