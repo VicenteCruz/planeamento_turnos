@@ -35,7 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Apply setup
     document.getElementById('btnApplySetup').addEventListener('click', () => {
-        const n = parseInt(document.getElementById('numEmployees').value) || 4;
+        const n = parseInt(document.getElementById('numEmployees').value) || AppState.employees.length;
         const employees = [];
         for (let i = 0; i < n; i++) {
             const inp = document.getElementById(`empName${i}`);

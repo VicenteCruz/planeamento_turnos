@@ -3,7 +3,7 @@
    ============================================ */
 
 function renderEmployeeInputs() {
-    const n = parseInt(document.getElementById('numEmployees').value) || 4;
+    const n = parseInt(document.getElementById('numEmployees').value) || AppState.employees.length;
     const list = document.getElementById('employeeNamesList');
     list.innerHTML = '';
     for (let i = 0; i < n; i++) {

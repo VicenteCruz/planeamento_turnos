@@ -3,7 +3,7 @@
    ============================================ */
 
 const AppState = {
-    employees: ['MSP', 'CMM', 'JB', 'CPS'],
+    employees: ['MSP', 'CMM', 'JB', 'CPS', 'DMM'],
     shifts: ['8h-17h', '12h-21h'],
     includeNight: false,
     personsPerShift: 2,
